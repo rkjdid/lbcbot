@@ -21,16 +21,20 @@ const LBCSearchCatPrefixFormat = LBCHost + "/%s/offres/?"
 
 type Query struct {
 	Search   string
-	RadiusKM int // if 0, search france entière
-	Lng, Lat float32
+	RadiusKM int     // if 0, search la france entière
+	Lng, Lat float32 // if 0 and a Radius != 0, ip geo localisation will be tried
 
 	Category string // category, as displayed in url /
-	PriceMin int    // index from 0 to len(category:PriceMin) - check lbc web interface
-	PriceMax int    // index from 0 to len(category:PriceMax) - check lbc web interface
+	PriceMin int    // index from 0 to len(PriceMin list in category) - check lbc web interface "Prix min:"
+	PriceMax int    // index from 0 to len(PriceMax list in category) - check lbc web interface "Prix max:"
 
 	// extra args for category-specific parameters not found in Query struct otherwise
 	// - check lbc/category web interface for specifics
 	RawArgs map[string]string
+
+	// or, even easier, type your request and paste it here
+	// if RawUrl is set, all previous shit will be ignored in favor of this
+	RawUrl string
 }
 
 type Item struct {
@@ -40,8 +44,28 @@ type Item struct {
 	ThumbURL string
 }
 
+func (q Query) String() string {
+	var s string
+	if q.Category != "" {
+		s = fmt.Sprintf("<%s", q.Category)
+		if q.Search != "" {
+			return fmt.Sprintf("%s:%s>", s, q.Search)
+		} else {
+			return s + ">"
+		}
+	} else if q.Search == "" {
+		return q.RawUrl
+	}
+	return q.Search
+}
+
 // BuildURL builds query url using q information.
 func (q *Query) BuildURL() string {
+	// if it was set, just usr q.RawUrl
+	if q.RawUrl != "" {
+		return q.RawUrl
+	}
+
 	var qURL string
 	var bcat bool // are we searching site-wide or in category
 	if q.Category != "" {
@@ -94,7 +118,8 @@ func (q *Query) BuildURL() string {
 // Run searches leboncoin using parameters from q.
 // If we get a 200 http response, parse html and extracts []Item.
 func (q *Query) Run() ([]Item, error) {
-	resp, err := http.Get(q.BuildURL())
+	q.RawUrl = q.BuildURL()
+	resp, err := http.Get(q.RawUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +141,7 @@ func parseHtml(body io.ReadCloser) ([]Item, error) {
 	var ok bool
 	node, ok = scrape.Find(node, attrMatcher("class", "tabsContent"))
 	if !ok {
-		return nil, fmt.Errorf(".tabsContent not found")
+		return nil, fmt.Errorf("main node $('section.tabsContent') not found")
 	}
 
 	nodeItems := scrape.FindAll(node, elemMatcher("a"))

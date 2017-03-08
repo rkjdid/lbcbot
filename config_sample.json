@@ -20,13 +20,14 @@
 				"brd": "Ferrari",
 				"mdl": "308"
 			}
-		},
-		{
+		}, {
 			"Search": "iphone 6s",
 			"RadiusKM": 50,
 			"Category": "telephonie",
 			"PriceMin": 8,
 			"PriceMax": 9
+		}, {
+			"RawUrl": "https://www.leboncoin.fr/annonces/offres/provence_alpes_cote_d_azur/?q=banjo&location=Marseille"
 		}
 	],
 	"PollIntervalMin": 10

@@ -9,7 +9,7 @@ import (
 
 type Config struct {
 	SMTPConfig      SMTPConfig
-	WatchList       []Query
+	WatchList       []*Query
 	PollIntervalMin int
 }
 
@@ -17,7 +17,7 @@ func NewConfig() *Config {
 	return &Config{
 		SMTPConfig:      SMTPConfig{},
 		PollIntervalMin: 10,
-		WatchList:       make([]Query, 1),
+		WatchList:       make([]*Query, 1),
 	}
 }
 
