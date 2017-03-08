@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="0.2"
+VERSION="0.3"
 
 deploy_win32_jdidco() {
   GOOS=windows GOARCH=386 go build -v -o lbcbot.exe jdid.co/lbcbot || exit 1
