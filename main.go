@@ -44,21 +44,29 @@ func main() {
 		log.Fatal("in LoadConfig():", err)
 	}
 
+	wr := bytes.NewBufferString("")
 	for _, q := range cfg.WatchList {
 		items, err := q.Run()
 		if err != nil {
-			fmt.Printf("error running query: %s\n%s", q.RawUrl, err)
+			log.Printf("error running query: %s\n%s", q.RawUrl, err)
 			continue
 		}
 
-		fmt.Printf("found %d items for %s:\n", len(items), q)
+		fmt.Fprintf(wr, "found %d items for %s:\n", len(items), q)
 		for k, item := range items {
 			if k == 5 {
-				fmt.Printf("  ... %d more\n", len(items[k:]))
+				fmt.Fprintf(wr, "  ... %d more\n", len(items[k:]))
 				break
 			}
-			fmt.Printf("  - %#v\n", item)
+			fmt.Fprintf(wr, "  - %#v\n", item)
 		}
-		fmt.Println()
 	}
+
+	err = cfg.SMTPConfig.SendMail("got your data", wr.String())
+	if err != nil {
+		log.Printf("error sending mail: %s", err)
+		log.Println("data:", wr.String())
+		os.Exit(1)
+	}
+	os.Exit(0)
 }
