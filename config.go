@@ -11,6 +11,7 @@ type Config struct {
 	SMTPConfig      SMTPConfig
 	WatchList       []*Query
 	PollIntervalMin int
+	HtmlRoot        string
 }
 
 func NewConfig() *Config {

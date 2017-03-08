@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // sample url :
@@ -35,6 +36,12 @@ type Query struct {
 	// or, even easier, type your request and paste it here
 	// if RawUrl is set, all previous shit will be ignored in favor of this
 	RawUrl string
+
+	// LastRun is set at query.Run()
+	LastRun time.Time
+
+	// Results holds the slice of items found after query has been run
+	Results []Item
 }
 
 type Item struct {
@@ -118,6 +125,7 @@ func (q *Query) BuildURL() string {
 // Run searches leboncoin using parameters from q.
 // If we get a 200 http response, parse html and extracts []Item.
 func (q *Query) Run() ([]Item, error) {
+	q.LastRun = time.Now()
 	q.RawUrl = q.BuildURL()
 	resp, err := http.Get(q.RawUrl)
 	if err != nil {
@@ -127,7 +135,8 @@ func (q *Query) Run() ([]Item, error) {
 		return nil, fmt.Errorf("http status: %s", resp.StatusCode)
 	}
 
-	return parseHtml(resp.Body)
+	q.Results, err = parseHtml(resp.Body)
+	return q.Results, err
 }
 
 // parseHtml does parsing magic to retreive search result items from body html tree.

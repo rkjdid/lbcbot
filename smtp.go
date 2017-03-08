@@ -32,9 +32,11 @@ func (cfg *SMTPConfig) SendTestMessage() error {
 
 func (cfg *SMTPConfig) buildHeader(subject string) map[string]string {
 	return map[string]string{
-		"From":    cfg.From,
-		"To":      strings.Join(cfg.To, ";"),
-		"Subject": subject,
+		"From":         cfg.From,
+		"To":           strings.Join(cfg.To, ";"),
+		"Subject":      subject,
+		"MIME-version": "1.0",
+		"Content-Type": "text/html; charset=\"UTF-8\"",
 	}
 }
 

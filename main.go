@@ -4,16 +4,22 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"os"
 	"os/user"
 	"path"
+	"time"
 )
 
 var (
 	rootPrefix = flag.String("root", "", "root directory for config & stuffs")
 	cfgPath    = flag.String("cfg", "", "cfg path, defaults to <root>/config.json")
 	htmlRoot   = flag.String("html", "", "path to html templates, defaults to <root>/html/")
+
+	debug = flag.Bool("debug", false, "enable debug mode (e.g. file generation instead of mail)")
+
+	cfg *Config
 )
 
 func init() {
@@ -39,34 +45,46 @@ func init() {
 }
 
 func main() {
-	cfg, err := LoadConfigFile(*cfgPath)
+	var err error
+	cfg, err = LoadConfigFile(*cfgPath)
 	if err != nil {
 		log.Fatal("in LoadConfig():", err)
 	}
+	if *htmlRoot != "" {
+		cfg.HtmlRoot = *htmlRoot
+	}
 
-	wr := bytes.NewBufferString("")
 	for _, q := range cfg.WatchList {
+		q.RawUrl = q.BuildURL()
+		log.Println(q.RawUrl)
 		items, err := q.Run()
 		if err != nil {
 			log.Printf("error running query: %s\n%s", q.RawUrl, err)
 			continue
 		}
-
-		fmt.Fprintf(wr, "found %d items for %s:\n", len(items), q)
-		for k, item := range items {
-			if k == 5 {
-				fmt.Fprintf(wr, "  ... %d more\n", len(items[k:]))
-				break
-			}
-			fmt.Fprintf(wr, "  - %#v\n", item)
-		}
+		log.Printf("found %d items\n", len(items))
 	}
 
-	err = cfg.SMTPConfig.SendMail("got your data", wr.String())
+	// generate html content
+	wr_html := bytes.NewBuffer([]byte{})
+	tpl, err := template.ParseGlob(path.Join(cfg.HtmlRoot, "*html"))
 	if err != nil {
-		log.Printf("error sending mail: %s", err)
-		log.Println("data:", wr.String())
-		os.Exit(1)
+		log.Fatalf("couldn't parse html folder: %s", err)
+	}
+
+	err = tpl.Execute(wr_html, cfg)
+	if err != nil {
+		log.Fatalf("error in tpl.Execute: %s", err)
+	}
+
+	if *debug {
+		fmt.Fprintf(os.Stdout, wr_html.String())
+		os.Exit(0)
+	}
+
+	err = cfg.SMTPConfig.SendMail("lbcbot> "+time.Now().String(), wr_html.String())
+	if err != nil {
+		log.Fatalf("error sending mail: %s", err)
 	}
 	os.Exit(0)
 }
