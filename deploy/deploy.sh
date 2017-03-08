@@ -1,6 +1,11 @@
 #!/bin/bash
 
-VERSION="0.2"
+VERSION="0.3"
+
+if [ "$(basename $(pwd))" != "deploy" ]; then
+	echo "must be in deploy dir" >&2
+	exit 1
+fi
 
 deploy_win32_jdidco() {
   GOOS=windows GOARCH=386 go build -v -o lbcbot.exe jdid.co/lbcbot || exit 1
@@ -12,7 +17,7 @@ deploy_win32_jdidco() {
 
 
 	target="lbcbot_win32-v${VERSION}.zip"
-  cp -a README.md config_sample.json lbcbot.exe $src/
+  cp -a ../README.md ../config_sample.json lbcbot.exe $src/
   echo "zipping $target"
   zip -r $target $src
   rm -rf $tmp
