@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	rootPrefix = flag.String("root", "~", "root directory for config & stuffs")
+	rootPrefix = flag.String("root", "", "root directory for config & stuffs")
 	cfgPath    = flag.String("cfg", "", "cfg path, defaults to <root>/config.json")
 	htmlRoot   = flag.String("html", "", "path to html templates, defaults to <root>/html/")
 )
@@ -19,12 +19,18 @@ var (
 func init() {
 	flag.Parse()
 
-	if *rootPrefix == "~" {
-		usr, err := user.Current()
+	if *rootPrefix == "" || *rootPrefix == "." {
+		cwd, err := os.Executable()
 		if err != nil {
-			log.Fatal("couldn't retreive system user", err)
+			log.Println("couldn't retreive working dir", err)
+			usr, err := user.Current()
+			if err != nil {
+				log.Fatal("couldn't retreive system user", err)
+			}
+			*rootPrefix = usr.HomeDir
+		} else {
+			*rootPrefix = path.Dir(cwd)
 		}
-		*rootPrefix = usr.HomeDir
 	}
 
 	if *cfgPath == "" {
