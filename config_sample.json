@@ -1,0 +1,33 @@
+{
+	"SMTPConfig": {
+		"Host": "mail.google.com",
+		"Port": "465",
+		"User": "<user>@gmail.com",
+		"Pass": "<pass>",
+		"From": "<user>@gmail.com",
+		"To": [
+			"to@gmail.com"
+		]
+	},
+	"WatchList": [
+		{
+			"Search": "ferrari",
+			"RadiusKM": 0,
+			"Category": "voitures",
+			"PriceMin": 0,
+			"PriceMax": 0,
+			"RawArgs": {
+				"brd": "Ferrari",
+				"mdl": "308"
+			}
+		},
+		{
+			"Search": "iphone 6s",
+			"RadiusKM": 50,
+			"Category": "telephonie",
+			"PriceMin": 8,
+			"PriceMax": 9
+		}
+	],
+	"PollIntervalMin": 10
+}
