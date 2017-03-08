@@ -1,12 +1,12 @@
 {
 	"SMTPConfig": {
-		"Host": "mail.google.com",
-		"Port": "465",
-		"User": "<user>@gmail.com",
-		"Pass": "<pass>",
-		"From": "<user>@gmail.com",
+		"Host": "mail.wservices.ch",
+		"Port": "587",
+		"User": "rk@jdid.co",
+		"Pass": "-",
+		"From": "rk@jdid.co",
 		"To": [
-			"to@gmail.com"
+			"rk@jdid.co"
 		]
 	},
 	"WatchList": [
