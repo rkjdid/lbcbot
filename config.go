@@ -12,6 +12,7 @@ type Config struct {
 	WatchList       []*Query
 	PollIntervalMin int
 	HtmlRoot        string
+	cache           map[string]bool
 }
 
 func NewConfig() *Config {
@@ -42,6 +43,9 @@ func LoadConfig(rd io.Reader) (cfg *Config, err error) {
 	err = dec.Decode(cfg)
 	if (err != nil) && (err != io.EOF) {
 		return cfg, errors.NewError(err)
+	}
+	if cfg.cache == nil {
+		cfg.cache = make(map[string]bool)
 	}
 	return cfg, nil
 }

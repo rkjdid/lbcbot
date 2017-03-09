@@ -27,6 +27,7 @@ func TestQuery_Run(t *testing.T) {
 		RadiusKM: 200,
 		Category: "voitures",
 		PriceMin: 41,
+		cfg:      &Config{},
 	}
 
 	items, err := q.Run()

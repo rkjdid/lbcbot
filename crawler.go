@@ -5,6 +5,7 @@ import (
 	"github.com/yhat/scrape"
 	"golang.org/x/net/html"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,8 +20,11 @@ const LBCScheme = "https"
 const LBCHost = "https://www.leboncoin.fr"
 const LBCSearchPrefix = LBCHost + "/annonces/offres/?"
 const LBCSearchCatPrefixFormat = LBCHost + "/%s/offres/?"
+const LBCAnnounceIDFormat = LBCHost + "/annonces/%s.htm"
 
 type Query struct {
+	cfg *Config
+
 	Search   string
 	RadiusKM int     // if 0, search la france entière
 	Lng, Lat float32 // if 0 and a Radius != 0, ip geo localisation will be tried
@@ -45,10 +49,17 @@ type Query struct {
 }
 
 type Item struct {
+	Id       string
 	URL      string
 	Title    string
 	Price    string
 	ThumbURL string
+}
+
+func (i Item) ParseId() string {
+	s0 := strings.LastIndex(i.URL, "/") + 1
+	s1 := strings.Index(i.URL, ".htm")
+	return i.URL[s0:s1]
 }
 
 func (q Query) String() string {
@@ -135,12 +146,12 @@ func (q *Query) Run() ([]Item, error) {
 		return nil, fmt.Errorf("http status: %s", resp.StatusCode)
 	}
 
-	q.Results, err = parseHtml(resp.Body)
+	q.Results, err = parseHtml(resp.Body, q.cfg.cache)
 	return q.Results, err
 }
 
 // parseHtml does parsing magic to retreive search result items from body html tree.
-func parseHtml(body io.ReadCloser) ([]Item, error) {
+func parseHtml(body io.ReadCloser, cache map[string]bool) ([]Item, error) {
 	defer body.Close()
 	node, err := html.Parse(body)
 	if err != nil {
@@ -154,18 +165,26 @@ func parseHtml(body io.ReadCloser) ([]Item, error) {
 	}
 
 	nodeItems := scrape.FindAll(node, elemMatcher("a"))
-	items := make([]Item, len(nodeItems))
-	for k, n := range nodeItems {
+	items := make([]Item, 0, len(nodeItems))
+
+results:
+	for _, n := range nodeItems {
 		item := Item{}
 
 		// scrape title, href
 		for _, attr := range n.Attr {
-			if attr.Key == "title" {
+			switch attr.Key {
+			case "title":
 				item.Title = strings.TrimSpace(attr.Val)
-			}
-			if attr.Key == "href" {
+			case "href":
 				item.URL = cleanURL(attr.Val)
+				item.Id = item.ParseId()
 			}
+		}
+
+		// cache check
+		if cache != nil && cache[item.Id] {
+			continue results
 		}
 
 		// scrape tb url
@@ -188,7 +207,12 @@ func parseHtml(body io.ReadCloser) ([]Item, error) {
 			}
 		}
 
-		items[k] = item
+		// new result, add to results & cache
+		items = append(items, item)
+		if cache != nil {
+			cache[item.Id] = true
+		}
+		log.Printf("got new result %s", item.Id)
 	}
 	return items, nil
 }
