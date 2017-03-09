@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -19,7 +20,8 @@ var (
 
 	debug = flag.Bool("debug", false, "enable debug mode (e.g. file generation instead of mail)")
 
-	cfg *Config
+	cfg   *Config
+	nbRun int
 )
 
 func init() {
@@ -40,30 +42,34 @@ func init() {
 	}
 
 	if *cfgPath == "" {
-		*cfgPath = path.Join(*rootPrefix, "config.json")
+		*cfgPath = filepath.Join(*rootPrefix, "config.json")
+	}
+	if *htmlRoot == "" {
+		*htmlRoot = filepath.Join(*rootPrefix, "html")
 	}
 }
 
-func main() {
-	var err error
-	cfg, err = LoadConfigFile(*cfgPath)
-	if err != nil {
-		log.Fatal("in LoadConfig():", err)
-	}
-	if *htmlRoot != "" {
-		cfg.HtmlRoot = *htmlRoot
-	}
-
-	for _, q := range cfg.WatchList {
+func run() {
+	var nbResults int
+	for k, q := range cfg.WatchList {
 		q.RawUrl = q.BuildURL()
-		log.Println(q.RawUrl)
+
 		items, err := q.Run()
 		if err != nil {
 			log.Printf("error running query: %s\n%s", q.RawUrl, err)
 			continue
 		}
-		log.Printf("found %d items\n", len(items))
+		if sz := len(items); sz > 0 {
+			nbResults += sz
+			log.Printf("found %d new items for query #%d \"%s\"", sz, k, q.Search)
+		}
 	}
+
+	if nbResults == 0 {
+		log.Printf("%d: no new results", nbRun)
+		return
+	}
+	log.Printf("%d: found %d new results. sending notification", nbRun, nbResults)
 
 	// generate html content
 	wr_html := bytes.NewBuffer([]byte{})
@@ -77,8 +83,10 @@ func main() {
 		log.Fatalf("error in tpl.Execute: %s", err)
 	}
 
+	// if debug, just tick once and exit
 	if *debug {
 		fmt.Fprintf(os.Stdout, wr_html.String())
+		fmt.Fprintln(os.Stderr, "debug enabled. exitting now")
 		os.Exit(0)
 	}
 
@@ -86,5 +94,25 @@ func main() {
 	if err != nil {
 		log.Fatalf("error sending mail: %s", err)
 	}
+}
+
+func main() {
+	var err error
+	cfg, err = LoadConfigFile(*cfgPath)
+	cfg.HtmlRoot = *htmlRoot
+	if err != nil {
+		log.Fatal("in LoadConfig():", err)
+	}
+
+	for _, q := range cfg.WatchList {
+		q.cfg = cfg
+	}
+	tick := time.NewTicker(time.Minute * time.Duration(cfg.PollIntervalMin))
+	for {
+		run()
+		nbRun++
+		<-tick.C
+	}
+
 	os.Exit(0)
 }
