@@ -16,4 +16,5 @@ func TestGeoIP(t *testing.T) {
 	if geoIP == nil || (geoIP.Lat == 0 && geoIP.Lon == 0) {
 		t.Fatal("empty geoIP")
 	}
+	t.Log(geoIP.Lat, geoIP.Lon)
 }
