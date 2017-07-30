@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/rkjdid/util"
 	"github.com/yhat/scrape"
 	"golang.org/x/net/html"
 	"io"
@@ -213,6 +214,13 @@ results:
 			cache[item.Id] = true
 		}
 		log.Printf("got new result %s", item.Id)
+	}
+
+	if len(items) > 0 {
+		err = util.WriteJsonFile(cache, CachePath)
+		if err != nil {
+			log.Printf("couldn't save cache: %s", err)
+		}
 	}
 	return items, nil
 }

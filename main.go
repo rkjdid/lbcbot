@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const CachePath = "cache.json"
+
 var (
 	rootPrefix = flag.String("root", "", "root directory for config & stuffs")
 	cfgPath    = flag.String("cfg", "", "cfg path, defaults to <root>/config.json")
@@ -103,6 +105,12 @@ func main() {
 	cfg.HtmlRoot = *htmlRoot
 	if err != nil {
 		log.Fatal("in LoadConfig():", err)
+	}
+
+	cfg.cache = make(map[string]bool)
+	err = util.ReadGenericFile(&cfg.cache, CachePath)
+	if err != nil {
+		log.Printf("couldn't load cache: %s", err)
 	}
 
 	for _, q := range cfg.WatchList {
