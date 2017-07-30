@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"github.com/rkjdid/util"
 	"html/template"
 	"log"
 	"os"
@@ -98,7 +99,7 @@ func run() {
 
 func main() {
 	var err error
-	cfg, err = LoadConfigFile(*cfgPath)
+	err = util.ReadGenericFile(&cfg, *cfgPath)
 	cfg.HtmlRoot = *htmlRoot
 	if err != nil {
 		log.Fatal("in LoadConfig():", err)
